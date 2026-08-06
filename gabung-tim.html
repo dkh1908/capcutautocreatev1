@@ -53,6 +53,15 @@
     </div>
 
     <script>
+        // CEK LOGIN & PROTEKSI HALAMAN
+        document.addEventListener('DOMContentLoaded', () => {
+            const username = localStorage.getItem('panel_username');
+            // Jika belum login, tendang ke halaman login
+            if (!username) {
+                window.location.href = 'index.html'; 
+            }
+        });
+
         async function mulaiJoin() {
             const akunList = document.getElementById('akunInput').value;
             const linkInvite = document.getElementById('linkInput').value;
