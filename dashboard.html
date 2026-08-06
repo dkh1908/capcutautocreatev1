@@ -147,13 +147,11 @@
             const username = localStorage.getItem('panel_username');
             const expiredRaw = localStorage.getItem('panel_expired');
 
-            // JIKA TIDAK ADA USERNAME (BELUM LOGIN), TENDANG KE HALAMAN LOGIN
             if (!username) {
-                window.location.href = 'index.html'; // Mengarahkan ke halaman utama/login
-                return; // Menghentikan script agar halaman di bawah tidak dieksekusi
+                window.location.href = 'index.html'; 
+                return; 
             } 
             
-            // JIKA SUDAH LOGIN, TAMPILKAN NAMA
             document.getElementById('namaUser').textContent = username;
 
             if (expiredRaw) {
@@ -163,8 +161,122 @@
                 document.getElementById('waktuExpired').textContent = formattedDate;
             }
 
-            // 2. TOMBOL MULAI PROSES TERHUBUNG KE PYTHON
-            document.getElementById('btnMulaiProses').addEventListener('click', async function() {
+            const btnMulai = document.getElementById('btnMulaiProses');
+            let pollingInterval;
+
+            // ==========================================
+            // FUNGSI CEK STATUS (POLLING) KE SERVER
+            // ==========================================
+            function mulaiCekStatus(jobId) {
+                // Ubah tampilan tombol
+                btnMulai.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES BOT... (BISA DITINGGAL)';
+                btnMulai.disabled = true;
+                btnMulai.classList.add('opacity-50', 'cursor-not-allowed');
+
+                // Cek ke server setiap 5 detik
+                pollingInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch(`https://suing-retiree-luckily.ngrok-free.dev/api/status/${jobId}`, {
+                            method: 'GET',
+                            headers: { 'ngrok-skip-browser-warning': 'true' }
+                        });
+                        const hasil = await res.json();
+
+                        if (hasil.status === 'success') {
+                            clearInterval(pollingInterval);
+                            localStorage.removeItem('job_aktif_generate'); // Hapus tiket karena sudah selesai
+
+                            // --- MUNCULKAN HASIL DAN TOMBOL UNDUH ---
+                            let aksiHtml = `<div class="col-span-2 text-center text-green-400"><i class="fa-solid fa-check"></i> Selesai</div>`;
+                            
+                            if (hasil.akun_list && hasil.akun_list.length > 0) {
+                                const textContent = hasil.akun_list.join('\n');
+                                const blob = new Blob([textContent], { type: 'text/plain' });
+                                const fileUrl = URL.createObjectURL(blob);
+                                const namaFile = `Akun_CapCut_${hasil.waktu_selesai.replace(/:/g, '')}.txt`;
+                                
+                                aksiHtml = `
+                                    <div class="col-span-2 text-center flex flex-col items-center justify-center gap-1">
+                                        <a href="${fileUrl}" download="${namaFile}" class="bg-brand-gold text-black px-3 py-1 rounded text-[10px] font-bold hover:bg-yellow-600 transition shadow-lg">
+                                            <i class="fa-solid fa-download"></i> UNDUH
+                                        </a>
+                                    </div>
+                                `;
+
+                                try {
+                                    const a = document.createElement('a');
+                                    a.href = fileUrl;
+                                    a.download = namaFile;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                } catch(e) {
+                                    console.log("Unduhan otomatis ditahan browser.");
+                                }
+                                
+                                alert(`Proses selesai!\nBerhasil: ${hasil.berhasil}\nGagal: ${hasil.gagal}\n\nSilakan cek file unduhan atau klik tombol UNDUH di tabel.`);
+                            } else {
+                                alert(`Proses selesai!\nBerhasil: 0\nGagal: ${hasil.gagal}\n\nTidak ada akun yang berhasil dibuat.`);
+                            }
+
+                            // Update Tabel Riwayat
+                            const wadahRiwayat = document.getElementById('wadahRiwayat');
+                            if (wadahRiwayat.innerHTML.includes('Belum ada data riwayat proses.')) {
+                                wadahRiwayat.innerHTML = '';
+                            }
+
+                            const barisHTML = `
+                                <div class="grid grid-cols-12 gap-2 text-[11px] font-medium text-gray-300 py-3 border-b border-gray-800/50 hover:bg-white/10 transition px-2 rounded items-center">
+                                    <div class="col-span-3 text-brand-gold">${hasil.waktu_selesai}</div>
+                                    <div class="col-span-3">Auto Daftar</div>
+                                    <div class="col-span-2 text-center text-blue-400 font-bold">${hasil.total}</div>
+                                    <div class="col-span-1 text-center text-green-500 font-bold">${hasil.berhasil}</div>
+                                    <div class="col-span-1 text-center text-red-500 font-bold">${hasil.gagal}</div>
+                                    ${aksiHtml}
+                                </div>
+                            `;
+                            wadahRiwayat.insertAdjacentHTML('afterbegin', barisHTML);
+
+                            resetTombol();
+
+                        } else if (hasil.status === 'error') {
+                            clearInterval(pollingInterval);
+                            localStorage.removeItem('job_aktif_generate');
+                            alert("Bot mengalami kendala: " + hasil.message);
+                            resetTombol();
+                        } else if (hasil.status === 'not_found') {
+                            clearInterval(pollingInterval);
+                            localStorage.removeItem('job_aktif_generate');
+                            alert("Tiket proses tidak ditemukan atau server di-restart.");
+                            resetTombol();
+                        }
+                        // Jika status masih 'processing', interval akan terus berulang, tidak melakukan apa-apa.
+                        
+                    } catch (error) {
+                        console.log("Menunggu koneksi ulang dari server...");
+                    }
+                }, 5000);
+            }
+
+            function resetTombol() {
+                btnMulai.innerHTML = '<i class="fa-solid fa-rocket"></i> MULAI PROSES';
+                btnMulai.disabled = false;
+                btnMulai.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            // ==========================================
+            // PENGECEKAN TIKET LAMA SAAT HALAMAN DIBUKA
+            // ==========================================
+            const tiketLama = localStorage.getItem('job_aktif_generate');
+            if (tiketLama) {
+                // Jika pengguna habis refresh web dan masih ada tiket yang berjalan, lanjutkan pengecekan!
+                mulaiCekStatus(tiketLama);
+            }
+
+            // ==========================================
+            // EVENT KLIK TOMBOL MULAI PROSES
+            // ==========================================
+            btnMulai.addEventListener('click', async function() {
                 const jumlahAkun = document.getElementById('inputJumlahAkun').value;
                 const linkInvite = document.getElementById('inputLinkInvite').value;
 
@@ -173,22 +285,20 @@
                     return;
                 }
 
-                const btn = this;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES BOT... JANGAN TUTUP BROWSER';
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                // Ubah sementara sebelum request selesai
+                btnMulai.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MENGIRIM TIKET...';
+                btnMulai.disabled = true;
+                btnMulai.classList.add('opacity-50', 'cursor-not-allowed');
 
                 try {
-                    // Ambil password kustom, jika belum diatur gunakan default
                     const customPassword = localStorage.getItem('capcut_custom_password') || 'CapcutTeam123!';
 
-                    // Mengirim perintah ke Python via URL Ngrok Permanen
+                    // Minta tiket ke Python (Tidak menunggu bot selesai)
                     const response = await fetch('https://suing-retiree-luckily.ngrok-free.dev/api/generate', {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
-                            'ngrok-skip-browser-warning': 'true' // <--- INI BARIS YANG DITAMBAHKAN
+                            'ngrok-skip-browser-warning': 'true'
                         },
                         body: JSON.stringify({
                             jumlah: parseInt(jumlahAkun),
@@ -199,73 +309,25 @@
 
                     const hasil = await response.json();
                     
-                    if(hasil.status === 'success') {
-                        
-                        let aksiHtml = `<div class="col-span-2 text-center text-green-400"><i class="fa-solid fa-check"></i> Selesai</div>`;
-                        
-                        // --- FITUR UNDUH ---
-                        if (hasil.akun_list && hasil.akun_list.length > 0) {
-                            const textContent = hasil.akun_list.join('\n');
-                            const blob = new Blob([textContent], { type: 'text/plain' });
-                            const fileUrl = URL.createObjectURL(blob);
-                            const namaFile = `Akun_CapCut_${hasil.waktu_selesai.replace(/:/g, '')}.txt`;
-                            
-                            // Menambahkan tombol fisik Unduh ke dalam tabel
-                            aksiHtml = `
-                                <div class="col-span-2 text-center flex flex-col items-center justify-center gap-1">
-                                    <a href="${fileUrl}" download="${namaFile}" class="bg-brand-gold text-black px-3 py-1 rounded text-[10px] font-bold hover:bg-yellow-600 transition shadow-lg">
-                                        <i class="fa-solid fa-download"></i> UNDUH
-                                    </a>
-                                </div>
-                            `;
-
-                            // Pemicu Unduh Otomatis (Jika diizinkan browser)
-                            try {
-                                const a = document.createElement('a');
-                                a.href = fileUrl;
-                                a.download = namaFile;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                            } catch(e) {
-                                console.log("Unduhan otomatis ditahan browser, bisa gunakan tombol unduh manual.");
-                            }
-                            
-                            alert(`Proses selesai!\nBerhasil: ${hasil.berhasil}\nGagal: ${hasil.gagal}\n\nSilakan cek file unduhan atau klik tombol UNDUH di tabel.`);
-                        } else {
-                            alert(`Proses selesai!\nBerhasil: 0\nGagal: ${hasil.gagal}\n\nTidak ada akun yang berhasil dibuat.`);
-                        }
-
-                        // --- UPDATE TABEL RIWAYAT ---
-                        const wadahRiwayat = document.getElementById('wadahRiwayat');
-                        if (wadahRiwayat.innerHTML.includes('Belum ada data riwayat proses.')) {
-                            wadahRiwayat.innerHTML = '';
-                        }
-
-                        const barisHTML = `
-                            <div class="grid grid-cols-12 gap-2 text-[11px] font-medium text-gray-300 py-3 border-b border-gray-800/50 hover:bg-white/10 transition px-2 rounded items-center">
-                                <div class="col-span-3 text-brand-gold">${hasil.waktu_selesai}</div>
-                                <div class="col-span-3">Auto Daftar</div>
-                                <div class="col-span-2 text-center text-blue-400 font-bold">${hasil.total}</div>
-                                <div class="col-span-1 text-center text-green-500 font-bold">${hasil.berhasil}</div>
-                                <div class="col-span-1 text-center text-red-500 font-bold">${hasil.gagal}</div>
-                                ${aksiHtml}
-                            </div>
-                        `;
-                        wadahRiwayat.insertAdjacentHTML('afterbegin', barisHTML);
+                    if (hasil.status === 'processing') {
+                        // Simpan ID Tiket ke HP
+                        localStorage.setItem('job_aktif_generate', hasil.job_id);
+                        // Jalankan pengecekan berulang
+                        mulaiCekStatus(hasil.job_id);
+                    } else if (hasil.status === 'error') {
+                        alert("Error: " + hasil.message);
+                        resetTombol();
                     }
                 } catch (error) {
                     alert("Gagal terhubung ke Script Python! Pastikan terminal app.py dan Ngrok sudah berjalan.");
                     console.error(error);
-                } finally {
-                    // Kembalikan tombol
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    resetTombol();
                 }
             });
 
-            // 3. TOMBOL HAPUS SEMUA RIWAYAT
+            // ==========================================
+            // TOMBOL HAPUS SEMUA RIWAYAT
+            // ==========================================
             document.getElementById('btnHapusRiwayat').addEventListener('click', function() {
                 const wadah = document.getElementById('wadahRiwayat');
                 if (wadah.innerHTML.includes('Belum ada data riwayat proses.')) {
@@ -281,7 +343,9 @@
                 }
             });
 
-            // 4. TOMBOL LOGOUT
+            // ==========================================
+            // TOMBOL LOGOUT
+            // ==========================================
             document.getElementById('btnLogout').addEventListener('click', function() {
                 if (confirm('Anda yakin ingin keluar dari panel?')) {
                     localStorage.removeItem('panel_username');
