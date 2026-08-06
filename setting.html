@@ -88,7 +88,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Ambil data yang sudah disimpan sebelumnya (jika ada) dan tampilkan di kolom input
+            // 1. CEK LOGIN & PROTEKSI HALAMAN
+            const username = localStorage.getItem('panel_username');
+            if (!username) {
+                window.location.href = 'index.html'; // Mengarahkan ke halaman utama/login
+                return; // Menghentikan eksekusi script di bawahnya
+            }
+
+            // 2. Ambil data yang sudah disimpan sebelumnya (jika ada) dan tampilkan di kolom input
             const savedCapcutPassword = localStorage.getItem('capcut_custom_password');
             if (savedCapcutPassword) {
                 document.getElementById('capcutPassword').value = savedCapcutPassword;
