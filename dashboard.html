@@ -143,15 +143,18 @@
     <!-- Script JavaScript Terpadu -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. CEK LOGIN & TAMPILKAN DATA
+            // 1. CEK LOGIN & PROTEKSI HALAMAN
             const username = localStorage.getItem('panel_username');
             const expiredRaw = localStorage.getItem('panel_expired');
 
+            // JIKA TIDAK ADA USERNAME (BELUM LOGIN), TENDANG KE HALAMAN LOGIN
             if (!username) {
-                document.getElementById('namaUser').textContent = "Demo User";
-            } else {
-                document.getElementById('namaUser').textContent = username;
-            }
+                window.location.href = 'index.html'; // Mengarahkan ke halaman utama/login
+                return; // Menghentikan script agar halaman di bawah tidak dieksekusi
+            } 
+            
+            // JIKA SUDAH LOGIN, TAMPILKAN NAMA
+            document.getElementById('namaUser').textContent = username;
 
             if (expiredRaw) {
                 const expDate = new Date(expiredRaw);
