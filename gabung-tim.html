@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Join Tim CapCut</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-6">
+
+    <div class="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-2xl border border-gray-700 relative">
+        
+        <!-- Tombol Kembali -->
+        <a href="dashboard.html" class="absolute top-6 left-6 text-gray-400 hover:text-blue-400 transition flex items-center text-sm font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Kembali
+        </a>
+
+        <!-- Tambahan margin-top (mt-6) agar judul tidak bertabrakan dengan tombol kembali -->
+        <h1 class="text-3xl font-bold text-center text-blue-400 mb-6 mt-6">🤖 Bot Auto Join Tim</h1>
+        
+        <div class="space-y-4">
+            <!-- Input Akun -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Daftar Akun (Format: email|password)</label>
+                <textarea id="akunInput" rows="5" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="email1@domain.com|password123&#10;email2@domain.com|password456"></textarea>
+                <p class="text-xs text-gray-400 mt-1">* Pisahkan akun dengan Enter baris baru.</p>
+            </div>
+
+            <!-- Input Link Invite -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Link Invite Tim (Opsional jika banyak)</label>
+                <textarea id="linkInput" rows="3" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500" placeholder="https://www.capcut.com/join/xxxxx"></textarea>
+            </div>
+
+            <!-- Tombol Mulai -->
+            <button id="btnStart" onclick="mulaiJoin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                🚀 Mulai Auto Join
+            </button>
+        </div>
+
+        <!-- Status Hasil -->
+        <div id="statusBox" class="mt-6 hidden bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <h3 class="font-bold text-lg mb-2 text-center text-yellow-400" id="statusText">Memproses...</h3>
+            <ul class="text-sm space-y-1 text-gray-300">
+                <li>Total Akun: <span id="resTotal" class="font-bold text-white">-</span></li>
+                <li>Sukses Join: <span id="resSukses" class="font-bold text-green-400">-</span></li>
+                <li>Gagal: <span id="resGagal" class="font-bold text-red-400">-</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function mulaiJoin() {
+            const akunList = document.getElementById('akunInput').value;
+            const linkInvite = document.getElementById('linkInput').value;
+            const btn = document.getElementById('btnStart');
+            const statusBox = document.getElementById('statusBox');
+
+            if(!akunList.trim()) {
+                alert("Harap masukkan minimal 1 akun!");
+                return;
+            }
+
+            // Ubah tampilan tombol
+            btn.disabled = true;
+            btn.innerHTML = "⏳ Bot Sedang Berjalan (Cek Terminal)...";
+            btn.classList.replace('bg-blue-600', 'bg-gray-600');
+            btn.classList.replace('hover:bg-blue-700', 'hover:bg-gray-600');
+            
+            // Tampilkan kotak status
+            statusBox.classList.remove('hidden');
+            document.getElementById('statusText').innerText = "Sedang Memproses Login & Join...";
+
+            try {
+                // MENGGUNAKAN URL PERMANEN NGROK
+                const response = await fetch('https://suing-retiree-luckily.ngrok-free.dev/api/join', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        akun_list: akunList,
+                        links: linkInvite
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    document.getElementById('statusText').innerText = "✅ Proses Selesai!";
+                    document.getElementById('statusText').classList.replace('text-yellow-400', 'text-green-400');
+                    document.getElementById('resTotal').innerText = result.total;
+                    document.getElementById('resSukses').innerText = result.berhasil;
+                    document.getElementById('resGagal').innerText = result.gagal;
+                } else {
+                    alert("Error: " + result.message);
+                    document.getElementById('statusText').innerText = "❌ Terjadi Kesalahan";
+                }
+            } catch (error) {
+                alert("Gagal terhubung ke bot! Pastikan app.py dan Ngrok sedang berjalan.");
+                document.getElementById('statusText').innerText = "❌ Server Offline";
+            } finally {
+                // Kembalikan tombol seperti semula
+                btn.disabled = false;
+                btn.innerHTML = "🚀 Mulai Auto Join";
+                btn.classList.replace('bg-gray-600', 'bg-blue-600');
+                btn.classList.replace('hover:bg-gray-600', 'hover:bg-blue-700');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Panel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#141416',
+                        'panel-bg': '#1C1C22',
+                        'input-bg': '#16161B',
+                        'brand-gold': '#D4A353',
+                        'brand-gold-hover': '#b5873d',
+                        'text-muted': '#A0A0A5'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #141416;
+            background-image: url('http://googleusercontent.com/image_collection/image_retrieval/16782032435987672131_0'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        .glass-panel {
+            background-color: rgba(28, 28, 34, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Form Container -->
+    <div class="glass-panel w-full max-w-md rounded-2xl p-8 shadow-2xl border border-gray-800">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white">Login <span class="text-brand-gold">Panel</span></h1>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="space-y-5">
+            
+            <!-- Username Input -->
+            <div>
+                <label class="block text-sm text-text-muted mb-2 font-medium">
+                    <i class="fa-solid fa-user mr-1"></i> Username
+                </label>
+                <input type="text" id="username" placeholder="Masukkan Username" required
+                    class="w-full bg-input-bg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-gold transition placeholder-gray-600">
+            </div>
+
+            <!-- Password Input -->
+            <div>
+                <label class="block text-sm text-text-muted mb-2 font-medium">
+                    <i class="fa-solid fa-lock mr-1"></i> Password
+                </label>
+                <input type="password" id="password" placeholder="Masukkan Password" required
+                    class="w-full bg-input-bg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-gold transition placeholder-gray-600">
+            </div>
+
+            <!-- Captcha Section -->
+            <div>
+                <label class="block text-sm text-text-muted mb-2 font-medium">
+                    <i class="fa-solid fa-robot mr-1"></i> Verifikasi Keamanan
+                </label>
+                <div class="flex gap-3">
+                    <div class="bg-input-bg border border-gray-700 rounded-lg p-3 text-brand-gold font-bold w-1/3 text-center flex items-center justify-center" id="captchaQuestion">
+                        <!-- Otomatis diisi oleh JavaScript -->
+                    </div>
+                    <input type="number" id="captchaAnswer" placeholder="Hasil?" required
+                        class="w-full bg-input-bg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand-gold transition placeholder-gray-600">
+                </div>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" 
+                class="w-full bg-brand-gold hover:bg-brand-gold-hover text-black font-bold py-3.5 rounded-lg mt-6 transition duration-200 shadow-[0_0_15px_rgba(212,163,83,0.3)]">
+                MASUK
+            </button>
+
+            <!-- Register/Activation Button -->
+            <button type="button" onclick="window.location.href='register.html'"
+                class="w-full bg-transparent border border-brand-gold text-brand-gold hover:bg-gray-800 font-bold py-3.5 rounded-lg transition duration-200 mt-3 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-key"></i> DAFTAR & AKTIVASI KEY
+            </button>
+            
+            <!-- Tautan Perpanjang Akun -->
+            <div class="mt-6 text-center border-t border-gray-700 pt-4">
+                <p class="text-sm text-text-muted">
+                    Masa aktif akun habis? 
+                    <a href="topup.html" class="text-brand-gold hover:text-brand-gold-hover font-semibold transition duration-200 hover:underline">
+                        Perpanjang License di sini
+                    </a>
+                </p>
+            </div>
+            
+        </form>
+    </div>
+
+    <!-- Script Logika Verifikasi & Cek Login ke Database -->
+    <script>
+        // Link API Google Apps Script Anda (PASTIKAN SUDAH BENAR)
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyrcuF8YnS2wI5DvCZrBS_fVwW1YpgB5G4PYOzcYfMMreUlu8owcKTOHbbllY0H3o8/exec';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            const correctAnswer = num1 + num2;
+            
+            document.getElementById('captchaQuestion').textContent = `${num1} + ${num2}`;
+
+            const form = document.getElementById('loginForm');
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                
+                const userAnswer = parseInt(document.getElementById('captchaAnswer').value);
+                
+                if (userAnswer !== correctAnswer) {
+                    alert('Verifikasi Keamanan Salah. Silakan coba lagi.');
+                    document.getElementById('captchaAnswer').value = '';
+                    return; 
+                }
+
+                // Ambil data dari form input
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Ubah status tombol menjadi loading
+                submitButton.textContent = 'MENCOCOKKAN DATA...';
+                submitButton.disabled = true;
+
+                // Siapkan data untuk dikirim ke Google Sheets
+                const formData = new FormData();
+                formData.append('action', 'login');
+                formData.append('username', username);
+                formData.append('password', password);
+
+                // Proses pengecekan data
+                fetch(scriptURL, { method: 'POST', body: formData })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert(data.message); 
+                            
+                            // BAGIAN INI YANG SEBELUMNYA KURANG: Menyimpan data ke memori browser
+                            localStorage.setItem('panel_username', data.username);
+                            localStorage.setItem('panel_expired', data.expired);
+                            
+                            window.location.href = 'dashboard.html'; 
+                        } else {
+                            alert(data.message); 
+                            document.getElementById('captchaAnswer').value = ''; 
+                        }
+                    })
+                    .catch(error => {
+                        alert('Terjadi kesalahan sistem atau koneksi terputus!');
+                        console.error('Error!', error.message);
+                    })
+                    .finally(() => {
+                        // Kembalikan tombol seperti semula
+                        submitButton.textContent = 'MASUK';
+                        submitButton.disabled = false;
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

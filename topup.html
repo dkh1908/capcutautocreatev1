@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perpanjang Akun - Panel CapCut</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-96 border border-gray-700">
+        <h2 class="text-2xl font-bold text-center mb-6 text-yellow-500">PERPANJANG AKUN</h2>
+        <p class="text-sm text-gray-400 text-center mb-6">Masukkan Username dan License Key baru Anda untuk menambah masa aktif.</p>
+        
+        <form id="topupForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-300">Username</label>
+                <input type="text" id="username" class="w-full px-4 py-2 bg-gray-900 rounded border border-gray-600 focus:outline-none focus:border-yellow-500 text-white" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-gray-300">License Key Baru</label>
+                <input type="text" id="license" class="w-full px-4 py-2 bg-gray-900 rounded border border-gray-600 focus:outline-none focus:border-yellow-500 text-white" required>
+            </div>
+            
+            <button type="submit" id="submitBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-4">
+                PROSES PERPANJANGAN
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="index.html" class="text-sm text-gray-400 hover:text-yellow-500 transition duration-200">
+                &larr; Kembali ke halaman Login
+            </a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('topupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // PENTING: Ganti tulisan di bawah dengan link URL Web App Google Apps Script Anda!
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyrcuF8YnS2wI5DvCZrBS_fVwW1YpgB5G4PYOzcYfMMreUlu8owcKTOHbbllY0H3o8/exec'; 
+            
+            const username = document.getElementById('username').value;
+            const license = document.getElementById('license').value;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            submitBtn.innerHTML = 'MEMPROSES...';
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            fetch(scriptURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                // Mengirim parameter action=topup
+                body: `action=topup&username=${username}&license=${license}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.href = 'index.html'; // Lempar kembali ke login setelah sukses top-up
+                } else {
+                    alert(data.message);
+                    resetButton();
+                }
+            })
+            .catch(error => {
+                alert('Terjadi kesalahan jaringan! Coba lagi.');
+                resetButton();
+            });
+
+            function resetButton() {
+                submitBtn.innerHTML = 'PROSES PERPANJANGAN';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>
