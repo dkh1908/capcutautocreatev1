@@ -87,7 +87,10 @@
                 // MENGGUNAKAN URL PERMANEN NGROK
                 const response = await fetch('https://suing-retiree-luckily.ngrok-free.dev/api/join', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true' // <--- INI BARIS YANG DITAMBAHKAN
+                    },
                     body: JSON.stringify({
                         akun_list: akunList,
                         links: linkInvite
